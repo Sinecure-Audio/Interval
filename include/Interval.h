@@ -1,3 +1,4 @@
 #pragma once
 
-#include <IntervalClass.h>
+#include "../source/IntervalClass.h"
+

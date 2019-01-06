@@ -1,8 +1,48 @@
-#include "../source/Interval.h"
+#include "../include/Interval.h"
 
 #define CATCH_CONFIG_MAIN	
 #include "catch.hpp"
 
-TEST_CASE( "Factorials are computed", "[factorial]" ) {
-    REQUIRE( 1 == 1 );}
+TEST_CASE( "Empty", "[identities]" ) {
+    REQUIRE( MAKE_INTERVAL(0,0).Empty );
+    REQUIRE( !MAKE_INTERVAL(0,0.001).Empty );
+}
+
+TEST_CASE( "Equality", "[identities]" ) {
+    REQUIRE( (MAKE_INTERVAL(0,0) == MAKE_INTERVAL(0,0)) );
+    REQUIRE( (MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0,1)) );
+
+    REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,0)) );
+    REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,1)) );
+
+    REQUIRE( !(MAKE_INTERVAL(0,0) == MAKE_INTERVAL(0, .0001)) );
+    REQUIRE( !(MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0, .0001)) );
+
+    REQUIRE( !(MAKE_INTERVAL(0,0) != MAKE_INTERVAL(0,0)) );
+    REQUIRE( !(MAKE_INTERVAL(0,1) != MAKE_INTERVAL(0,1)) );
+}
+
+TEST_CASE( "Greater", "[identities]" ) {
+    REQUIRE( (MAKE_INTERVAL(0.,1.,.9) > MAKE_INTERVAL(0.,1.,.5)) );
+    //REQUIRE( (MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0,1)) );
+
+    //REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,0)) );
+    //REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,1)) );
+
+    //REQUIRE( !(MAKE_INTERVAL(0,0) == MAKE_INTERVAL(0, .0001)) );
+    //REQUIRE( !(MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0, .0001)) );
+
+    REQUIRE( !(MAKE_INTERVAL(0,0) > MAKE_INTERVAL(0,0)) );
+    REQUIRE( !(MAKE_INTERVAL(0,1,0) > MAKE_INTERVAL(0,1,1)) );
+}
+
+TEST_CASE( "Less", "[identities]" ) {
+	REQUIRE( (MAKE_INTERVAL(0.,1.,.5) < MAKE_INTERVAL(0.,1.,.9)) );
+    //REQUIRE( (MAKE_INTERVAL(0,0) == MAKE_INTERVAL(0,0)) );
+    //REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,0)) );
+
+    REQUIRE( !(MAKE_INTERVAL(0,0) < MAKE_INTERVAL(0,0)) );
+    //REQUIRE( !(MAKE_INTERVAL(0,0) != MAKE_INTERVAL(0,0)) );
+}
+
 
