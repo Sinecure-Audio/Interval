@@ -67,7 +67,7 @@ struct Interval
 
     constexpr auto operator>(const Interval<Bound1, Bound2>& otherRange) const
     {
-	if (otherRange.value > value)
+	if (value > otherRange.value)
         	return true;
 	else
 		return false;
@@ -75,7 +75,7 @@ struct Interval
 
     constexpr auto operator<(const Interval<Bound1, Bound2>& otherRange) const
     {
-	if (otherRange.value < value)
+	if (value < otherRange.value)
         	return true;
 	else
 		return false;
