@@ -133,7 +133,7 @@ struct Interval
     template<typename Ty, typename Tu>
     constexpr auto operator+=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
         setValue(value+((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
@@ -148,7 +148,7 @@ struct Interval
     template<typename Ty, typename Tu>
     constexpr auto operator-=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
         setValue(value-((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
@@ -163,7 +163,7 @@ struct Interval
     template<typename Ty, typename Tu>
     constexpr auto operator*=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
         setValue(value*((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
@@ -178,7 +178,7 @@ struct Interval
     template<typename Ty, typename Tu>
     constexpr auto operator/=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
         setValue(value/((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
