@@ -53,9 +53,17 @@ struct FloatConstant
 private:
     static constexpr auto makeFloat()
     {
+        if constexpr (Digits != 0)
+        {
         const auto signFlag = SignFlag ? 1. : -1.;
         const auto actualRemainder = NumberOfDigits == 0 ? 0 : (static_cast<long double>(Decimal)/NumberOfDigits);
         return signFlag*(WholeNumber+actualRemainder);
+        }
+        else
+            if constexpr (Sign)
+                return static_cast<unsigned int>(Integral);
+            else
+                return static_cast<int>(Integral);
     }
 
 public:

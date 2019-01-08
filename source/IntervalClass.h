@@ -36,17 +36,32 @@ struct Interval
     static constexpr ValueType LowerBound   = std::min(Start, End);
     static constexpr ValueType UpperBound   = std::max(Start, End);
 
+    static constexpr ValueType Length = UpperBound-LowerBound;
+
     static constexpr bool Empty = Start==End;
+
+    static constexpr bool Reverse = Start>End;
 
     constexpr Interval(const ValueType& val = Start) : value(val){}
     constexpr Interval(const Interval&) = default;
 	constexpr Interval(Interval&&) = default;
 
-    /*template<typename Ty, typename Tu>
     constexpr auto operator=(const Interval<Bound1, Bound2>& otherRange)
     {
-        return otherRange.value == value;
-    }*/
+        return value = otherRange.value;
+    }
+
+    template<typename Ty, typename Tu>
+    constexpr auto operator=(const Interval<Ty, Tu>& otherRange)
+    {
+        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
+        return value = ((otherRange.value+offsetAndScale.first)*offsetAndScale.second);
+    }
+
+    constexpr auto operator=(const ValueType& newValue)
+    {
+        return value = newValue;
+    }
 
     //template<typename Ty, typename Tu>
     constexpr auto operator==(const Interval<Bound1, Bound2>& otherRange) const
@@ -65,6 +80,12 @@ struct Interval
         return !(otherRange.value == value);
     }
 
+    template<typename Ty, typename Tu>
+    constexpr auto operator!=(const Interval<Ty, Tu>&) const
+    {
+        return true;
+    }
+
     constexpr auto operator>(const Interval<Bound1, Bound2>& otherRange) const
     {
 	if (value > otherRange.value)
@@ -81,12 +102,6 @@ struct Interval
 		return false;
     }
 
-    template<typename Ty, typename Tu>
-    constexpr auto operator!=(const Interval<Ty, Tu>&) const
-    {
-        return true;
-    }
-
     // template<typename Ty, typename Tu>
     // constexpr auto operator+=(const Interval<Ty, Tu>& otherRange)
     // {
@@ -96,31 +111,81 @@ struct Interval
     //     return *this;
     // }
 
+    // template<typename T>
+    // constexpr auto operator+(const Interval<Bound1, T>& otherInteveral)
+    // {
+    //     // if both intervals aren't going in the same direction, the range should be between the smallest of start, end1, and end2. Otherwise, it should go from start to end1+end2  
+    //     if constexpr 
+    //     return Interval<Bound1, T::value+>
+    // }
+
     template<typename Ty, typename Tu>
-    constexpr auto getOffsetAndScale(const Interval<Ty, Tu>& otherRange)
+    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>& otherRange)
     {
-        const auto offset = otherRange.Start-Start;
-        const auto scale = (End-Start)/(otherRange.End-otherRange.Start);
+        constexpr auto offset = otherRange.Start-Start;
+        constexpr auto scale = (End-Start)/(otherRange.End-otherRange.Start);
         return std::pair{offset, scale};
     }
 
     template<typename Ty, typename Tu>
     constexpr auto operator+=(const Interval<Ty, Tu>& otherRange)
     {
-        const auto offset = otherRange.Start-Start;
-        const auto scale = (End-Start)/(otherRange.End-otherRange.Start);
-        setValue(value+((otherRange.value+offset)*scale));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
+        setValue(value+((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
+
+    constexpr auto operator+=(const ValueType& newValue)
+    {
+        setValue(value+newValue);
+        return *this;
+    }
+
 
     template<typename Ty, typename Tu>
     constexpr auto operator-=(const Interval<Ty, Tu>& otherRange)
     {
-        const auto offset = otherRange.Start-Start;
-        const auto scale = (End-Start)/(otherRange.End-otherRange.Start);
-        setValue(value-((otherRange.value+offset)*scale));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
+        setValue(value-((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
+
+    constexpr auto operator-=(const ValueType& newValue)
+    {
+        setValue(value-newValue);
+        return *this;
+    }
+
+
+    template<typename Ty, typename Tu>
+    constexpr auto operator*=(const Interval<Ty, Tu>& otherRange)
+    {
+        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
+        setValue(value*((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        return *this;
+    }
+
+    constexpr auto operator*=(const ValueType& newValue)
+    {
+        setValue(value*newValue);
+        return *this;
+    }
+
+
+    template<typename Ty, typename Tu>
+    constexpr auto operator/=(const Interval<Ty, Tu>& otherRange)
+    {
+        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
+        setValue(value/((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        return *this;
+    }
+
+    constexpr auto operator/=(const ValueType& newValue)
+    {
+        setValue(value/newValue);
+        return *this;
+    }
+
 
     constexpr auto operator+(const ValueType& newValue)
     {
