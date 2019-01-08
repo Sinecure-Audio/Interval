@@ -28,6 +28,14 @@ namespace {
     }
 
     template<typename T>
+    constexpr auto round(const T& value)
+    {
+        const auto absValue = value >= 0 ? value : value * -1;
+        const auto truncatedValue = static_cast<unsigned long long>(absValue);
+        return absValue-truncatedValue > .5 ? truncatedValue+1 : truncatedValue;
+    }
+
+    template<typename T>
     constexpr auto getSignificantDigitsForType()
     {
         //Doesn't use numeric_limits because for some reason those function don't return the same as these macros, and these macros are correct in clang.
@@ -91,7 +99,7 @@ namespace{
         const auto flag = fl >= 0;
         const auto whole = flag ? static_cast<unsigned long long>(fl) : static_cast<unsigned long long>(fl*-1);
         const unsigned long long digits = integralPow<10ull, std::min(9, getSignificantDigitsForType<InputType>())>();
-        const auto remainder = std::is_floating_point_v<InputType> ? std::llround(static_cast<long double>(digits)*(static_cast<long double>(fl)-static_cast<long double>(whole))) : 0l;
+        const auto remainder = std::is_floating_point_v<InputType> ? round(static_cast<long double>(digits)*(static_cast<long double>(fl)-static_cast<long double>(whole))) : 0l;
 
         return std::make_tuple(flag, whole, digits, remainder);
     };
