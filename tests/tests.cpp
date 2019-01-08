@@ -16,7 +16,7 @@ TEST_CASE( "Reverse", "[identities]" ) {
 
 TEST_CASE( "Size", "[identities]" ) {
     constexpr auto v1 = 0., v2 = 8.;
-    REQUIRE( MAKE_INTERVAL(v1, v2).Length == v2-v1 );
+    REQUIRE( floatCompareEqual(MAKE_INTERVAL(v1, v2).Length, v2-v1));
 }
 
 TEST_CASE( "Same Interval Assignment", "[identities]" ) {
@@ -33,7 +33,7 @@ TEST_CASE( "Different Interval Assignment", "[identities]" ) {
     auto i2 = MAKE_INTERVAL(v1, v2, v2/2);
     i1 = i2;
     auto value = (v2/2)*((v3-v1)/(v2-v1));
-    REQUIRE( i1.value == value );
+    REQUIRE( floatCompareEqual(i1.value, value));
 }
 
 TEST_CASE( "Value Assignment", "[identities]" ) {
@@ -73,26 +73,26 @@ TEST_CASE( "Less than", "[comparisons]" ) {
 }
 
 TEST_CASE( "Addition Assignment", "[assignment]" ) {
-    auto i1 = MAKE_INTERVAL(0.,1.,.5);
-    REQUIRE( i1.value != i1.End);
+    auto i1 = MAKE_INTERVAL(0., 1., .5);
+    REQUIRE( !floatCompareEqual(i1.value, i1.End));
     i1 += i1;
-    REQUIRE( i1.value == i1.End);
+    REQUIRE( floatCompareEqual(i1.value, i1.End));
     i1 += i1;
-    REQUIRE( i1.value == i1.End);
+    REQUIRE( floatCompareEqual(i1.value, i1.End));
 }
 
 TEST_CASE( "Subtraction assignment", "[assignment]" ) {
-    auto i1 = MAKE_INTERVAL(0.,1.,.5);
-    REQUIRE( i1.value != i1.End);
+    auto i1 = MAKE_INTERVAL(0., 1., .5);
+    REQUIRE( !floatCompareEqual(i1.value, i1.End));
     i1 -= i1;
-    REQUIRE( i1.value == 0);
+    REQUIRE( floatCompareEqual(i1.value, 0.));
     i1 -= i1;
-    REQUIRE( i1.value == 0);
+    REQUIRE( floatCompareEqual(i1.value, 0.));
 }
 
 TEST_CASE( "Multiplication assignment", "[assignment]" ) {
-    auto i1 = MAKE_INTERVAL(0.,1.,.5);
-    REQUIRE( i1.value != i1.End);
+    auto i1 = MAKE_INTERVAL(0., 1., .5);
+    REQUIRE( !floatCompareEqual(i1.value, i1.End));
     i1 *= i1;
     REQUIRE( i1.value == .25);
     i1 *= i1;
@@ -100,32 +100,32 @@ TEST_CASE( "Multiplication assignment", "[assignment]" ) {
 }
 
 TEST_CASE( "Division assignment", "[assignment]" ) {
-    auto i1 = MAKE_INTERVAL(0.,10. ,10);
-    REQUIRE( i1.value == i1.End);
+    auto i1 = MAKE_INTERVAL(0., 10. ,10.);
+    REQUIRE( floatCompareEqual(i1.value, i1.End));
     i1 /= i1;
     constexpr auto var1 = i1.End/i1.End;
-    REQUIRE( i1.value == var1);
+    REQUIRE( floatCompareEqual(i1.value, var1));
     i1 /= i1;
-    REQUIRE( i1.value == var1/var1);
+    REQUIRE( floatCompareEqual(i1.value, var1/var1));
 }
 
 TEST_CASE( "Addition by arithmetic value", "[arithmetic]" ) {
     constexpr auto v1 = 2, v2 = 3;
-    auto i1 = MAKE_INTERVAL(0., v1+v2, v1);
+    auto i1 = MAKE_INTERVAL(0, v1+v2, v1);
     i1 += v2;
     REQUIRE( i1.value == v1+v2);
 }
 
 TEST_CASE( "Subtraction by arithmetic value", "[arithmetic]" ) {
     constexpr auto v1 = 2, v2 = 3;
-    auto i1 = MAKE_INTERVAL(0., v1+v2, v2);
+    auto i1 = MAKE_INTERVAL(0, v1+v2, v2);
     i1 -= v1;
     REQUIRE( i1.value == v2-v1);
 }
 
 TEST_CASE( "Multiplication by arithmetic value", "[arithmetic]" ) {
     constexpr auto v1 = 2, v2 = 3;
-    auto i1 = MAKE_INTERVAL(0., v1*v2, v1);
+    auto i1 = MAKE_INTERVAL(0, v1*v2, v1);
     i1 *= v2;
     REQUIRE( i1.value == v1*v2);
 }
@@ -134,12 +134,12 @@ TEST_CASE( "Division by arithmetic value", "[arithmetic]" ){
     constexpr auto v1 = 2., v2 = 3.;
     auto i1 = MAKE_INTERVAL(0., v2, v2);
     i1 /= v1;
-    REQUIRE( i1.value == v2/v1);
+    REQUIRE( floatCompareEqual(i1.value, v2/v1));
 }
 
 TEST_CASE( "Clamped", "[bounds]" ) {
     constexpr auto v1 = 2;
-    auto i1 = MAKE_INTERVAL(0., v1, v1-(v1/2));
+    auto i1 = MAKE_INTERVAL(0, v1, v1-(v1/2));
     i1 += v1;
     REQUIRE( !i1.Empty);
     REQUIRE( i1.value == i1.End);
@@ -147,8 +147,7 @@ TEST_CASE( "Clamped", "[bounds]" ) {
 
 TEST_CASE( "Wrap", "[bounds]" ) {
     constexpr auto v1 = 2, v2 = 3;
-    auto i1 = MAKE_INTERVAL(0.,v2, v2, IntervalWrapModes::Wrap);
+    auto i1 = MAKE_INTERVAL(0,v2, v2, IntervalWrapModes::Wrap);
     i1 += v1;
     REQUIRE( i1.value == v1%v2);
 }
-

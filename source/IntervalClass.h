@@ -2,6 +2,9 @@
 
 #include "FloatConstant.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+
 #define SICRCAT( A, B ) A ## B
 #define SICRSELECT( NAME, NUM ) SICRCAT( NAME ## _, NUM )
 
@@ -57,7 +60,7 @@ struct Interval
 
     static constexpr ValueType Length = UpperBound-LowerBound;
 
-    static constexpr bool Empty = Start==End;
+    static constexpr bool Empty = floatCompareEqual(Start, End);
 
     static constexpr bool Reverse = Start>End;
 
@@ -224,20 +227,19 @@ struct Interval
         {
             if constexpr (WrapMode == IntervalWrapModes::Clamp)
             {
-                auto valueToUse = newValue;
-                if (valueToUse > UpperBound)
+                if (newValue > UpperBound)
                     value = UpperBound;
-                else if (valueToUse < LowerBound)
+                else if (newValue < LowerBound)
                     value = LowerBound;
                 else
-                    value = valueToUse;
+                    value = newValue;
             }
             else if constexpr(WrapMode == IntervalWrapModes::Wrap)
             {
                 constexpr auto offset = Start;
                 constexpr auto range = Length;
 
-                auto valueToUse = newValue-offset;
+                const auto valueToUse = newValue-offset;
                 if (valueToUse > UpperBound || valueToUse < LowerBound)
                     if constexpr(std::is_floating_point_v<ValueType>)
                         value = std::fmod(newValue, range)+offset;
@@ -251,3 +253,5 @@ struct Interval
 
     ValueType value;
 };
+
+#pragma clang diagnostic pop
