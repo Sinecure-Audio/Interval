@@ -19,7 +19,7 @@ TEST_CASE( "Size", "[identities]" ) {
     REQUIRE( MAKE_INTERVAL(v1, v2).Length == v2-v1 );
 }
 
-TEST_CASE( "Same Assignment", "[identities]" ) {
+TEST_CASE( "Same Interval Assignment", "[identities]" ) {
     constexpr auto v1 = 0, v2 = 10, v3 = 3, v4 = 8;
     auto i1 = MAKE_INTERVAL(v1, v2, v3);
     auto i2 = MAKE_INTERVAL(v1, v2, v4);
@@ -27,7 +27,7 @@ TEST_CASE( "Same Assignment", "[identities]" ) {
     REQUIRE( i1.value == v4 );
 }
 
-TEST_CASE( "Different Assignment", "[identities]" ) {
+TEST_CASE( "Different Interval Assignment", "[identities]" ) {
     constexpr auto v1 = 0., v2 = 10., v3 = 3.;
     auto i1 = MAKE_INTERVAL(v1, v3, v3/2);
     auto i2 = MAKE_INTERVAL(v1, v2, v2/2);
@@ -147,7 +147,7 @@ TEST_CASE( "Clamped", "[bounds]" ) {
 
 TEST_CASE( "Wrap", "[bounds]" ) {
     constexpr auto v1 = 2, v2 = 3;
-    auto i1 = MAKE_INTERVAL(0.,v2, v2);
+    auto i1 = MAKE_INTERVAL(0.,v2, v2, IntervalWrapModes::Wrap);
     i1 += v1;
     REQUIRE( i1.value == v1%v2);
 }

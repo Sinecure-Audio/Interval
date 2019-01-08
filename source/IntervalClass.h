@@ -5,8 +5,8 @@
 #define SICRCAT( A, B ) A ## B
 #define SICRSELECT( NAME, NUM ) SICRCAT( NAME ## _, NUM )
 
-#define SICRGET_COUNT( _1, _2, _3, COUNT, ... ) COUNT
-#define SICRVA_SIZE( ... ) SICRGET_COUNT( __VA_ARGS__, 3, 2, 1 )
+#define SICRGET_COUNT( _1, _2, _3, _4, COUNT, ... ) COUNT
+#define SICRVA_SIZE( ... ) SICRGET_COUNT( __VA_ARGS__, 4, 3, 2, 1 )
 
 #define SICRVA_SELECT( NAME, ... ) SICRSELECT( NAME, SICRVA_SIZE(__VA_ARGS__) )(__VA_ARGS__)
 
@@ -20,13 +20,32 @@ Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(ma
 Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start))>, \
   	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end))>>(default)
 
+#define MAKE_INTERVAL_4(start, end, default, mode) \
+Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start))>, \
+  	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end))>, mode>(default)
 
 
-template<typename Bound1, typename Bound2, typename ConstantValue = Bound1>
+namespace {
+    //used to make sure that the bounds for the Interval are FloatConstants
+    template <class T, template <auto...> class Template>
+    struct is_specialization : std::false_type {};
+
+    template <template <auto...> class Template, auto... Args>
+    struct is_specialization<Template<Args...>, Template> : std::true_type {};
+}
+
+
+enum class IntervalWrapModes
+{
+    Clamp,
+    Wrap
+};
+
+template<typename Bound1, typename Bound2, IntervalWrapModes WrapMode = IntervalWrapModes::Clamp>
 struct Interval
 {
-    static_assert(is_specialization<Bound1,   FloatConstant>{}, "Start value needs to be a float constant.");
-    static_assert(is_specialization<Bound2,   FloatConstant>{}, "End value needs to be a float constant.");
+    static_assert(is_specialization<Bound1, FloatConstant>{}, "Start value needs to be a float constant.");
+    static_assert(is_specialization<Bound2, FloatConstant>{}, "End value needs to be a float constant.");
 
     using ValueType = std::common_type_t<decltype(Bound1::value), decltype(Bound2::value)>;
 
@@ -46,16 +65,16 @@ struct Interval
     constexpr Interval(const Interval&) = default;
 	constexpr Interval(Interval&&) = default;
 
-    constexpr auto operator=(const Interval<Bound1, Bound2>& otherRange)
+    constexpr auto operator=(const Interval<Bound1, Bound2>& otherInterval)
     {
-        return value = otherRange.value;
+        return value = otherInterval.value;
     }
 
     template<typename Ty, typename Tu>
-    constexpr auto operator=(const Interval<Ty, Tu>& otherRange)
+    constexpr auto operator=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
-        return value = ((otherRange.value+offsetAndScale.first)*offsetAndScale.second);
+        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        return value = ((otherInterval.value+offsetAndScale.first)*offsetAndScale.second);
     }
 
     constexpr auto operator=(const ValueType& newValue)
@@ -64,9 +83,9 @@ struct Interval
     }
 
     //template<typename Ty, typename Tu>
-    constexpr auto operator==(const Interval<Bound1, Bound2>& otherRange) const
+    constexpr auto operator==(const Interval<Bound1, Bound2>& otherInterval) const
     {
-        return otherRange.value == value;
+        return otherInterval.value == value;
     }
 
     template<typename Ty, typename Tu>
@@ -75,9 +94,9 @@ struct Interval
         return false;
     }
 
-    constexpr auto operator!=(const Interval<Bound1, Bound2>& otherRange) const
+    constexpr auto operator!=(const Interval<Bound1, Bound2>& otherInterval) const
     {
-        return !(otherRange.value == value);
+        return !(otherInterval.value == value);
     }
 
     template<typename Ty, typename Tu>
@@ -86,52 +105,35 @@ struct Interval
         return true;
     }
 
-    constexpr auto operator>(const Interval<Bound1, Bound2>& otherRange) const
+    constexpr auto operator>(const Interval<Bound1, Bound2>& otherInterval) const
     {
-	if (value > otherRange.value)
+	if (value > otherInterval.value)
         	return true;
 	else
 		return false;
     }
 
-    constexpr auto operator<(const Interval<Bound1, Bound2>& otherRange) const
+    constexpr auto operator<(const Interval<Bound1, Bound2>& otherInterval) const
     {
-	if (value < otherRange.value)
+	if (value < otherInterval.value)
         	return true;
 	else
 		return false;
     }
-
-    // template<typename Ty, typename Tu>
-    // constexpr auto operator+=(const Interval<Ty, Tu>& otherRange)
-    // {
-    //     const auto offset = otherRange.Start-Start;
-    //     const auto scale = (otherRange.End-otherRange.Start)/(End-Start);
-    //     setValue(otherRange.value+offset*scale);
-    //     return *this;
-    // }
-
-    // template<typename T>
-    // constexpr auto operator+(const Interval<Bound1, T>& otherInteveral)
-    // {
-    //     // if both intervals aren't going in the same direction, the range should be between the smallest of start, end1, and end2. Otherwise, it should go from start to end1+end2  
-    //     if constexpr 
-    //     return Interval<Bound1, T::value+>
-    // }
 
     template<typename Ty, typename Tu>
-    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>& otherRange)
+    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offset = otherRange.Start-Start;
-        constexpr auto scale = (End-Start)/(otherRange.End-otherRange.Start);
+        constexpr auto offset = otherInterval.Start-Start;
+        constexpr auto scale = (End-Start)/(otherInterval.End-otherInterval.Start);
         return std::pair{offset, scale};
     }
 
     template<typename Ty, typename Tu>
-    constexpr auto operator+=(const Interval<Ty, Tu>& otherRange)
+    constexpr auto operator+=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
-        setValue(value+((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        setValue(value+((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
 
@@ -143,10 +145,10 @@ struct Interval
 
 
     template<typename Ty, typename Tu>
-    constexpr auto operator-=(const Interval<Ty, Tu>& otherRange)
+    constexpr auto operator-=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
-        setValue(value-((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        setValue(value-((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
 
@@ -158,10 +160,10 @@ struct Interval
 
 
     template<typename Ty, typename Tu>
-    constexpr auto operator*=(const Interval<Ty, Tu>& otherRange)
+    constexpr auto operator*=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
-        setValue(value*((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        setValue(value*((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
 
@@ -173,10 +175,10 @@ struct Interval
 
 
     template<typename Ty, typename Tu>
-    constexpr auto operator/=(const Interval<Ty, Tu>& otherRange)
+    constexpr auto operator/=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherRange);
-        setValue(value/((otherRange.value+offsetAndScale.first)*offsetAndScale.second));
+        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        setValue(value/((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
 
@@ -219,13 +221,30 @@ struct Interval
 	{
         if constexpr(!Empty)
         {
-		    auto valueToUse = newValue;
-            if (valueToUse > UpperBound)
-                value = UpperBound;
-            else if (valueToUse < LowerBound)
-                value = LowerBound;
-            else
-                value = valueToUse;
+            if constexpr (WrapMode == IntervalWrapModes::Clamp)
+            {
+                auto valueToUse = newValue;
+                if (valueToUse > UpperBound)
+                    value = UpperBound;
+                else if (valueToUse < LowerBound)
+                    value = LowerBound;
+                else
+                    value = valueToUse;
+            }
+            else if constexpr(WrapMode == IntervalWrapModes::Wrap)
+            {
+                constexpr auto offset = Start;
+                constexpr auto range = Length;
+
+                auto valueToUse = newValue-offset;
+                if (valueToUse > UpperBound || valueToUse < LowerBound)
+                    if constexpr(std::is_floating_point_v<ValueType>)
+                        value = std::fmod(newValue, range)+offset;
+                    else
+                        value = (newValue % range)+offset;
+                else
+                    value = valueToUse;
+            }
         }
 	}
 
