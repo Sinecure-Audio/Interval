@@ -1,0 +1,13 @@
+image : unriginal/clang-build:latest
+
+before_script:
+    - apt-get update --yes
+    - apt-get install --yes cmake
+
+Build&Test:
+  script:
+    - mkdir build
+    - cd build
+    - cmake ../
+    - make
+    - ./test_module --success

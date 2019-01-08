@@ -1,9 +1,8 @@
 #include "../source/Interval.h"
-#include <catch.hpp>
 
-#define CATCH_CONFIG_MAIN
+#define CATCH_CONFIG_MAIN	
+#include "catch.hpp"
 
-// int main()
-// {
-// 	return 0;
-// };
+TEST_CASE( "Factorials are computed", "[factorial]" ) {
+    REQUIRE( 1 == 1 );}
+
