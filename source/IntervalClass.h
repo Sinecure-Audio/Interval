@@ -73,7 +73,7 @@ struct Interval
     template<typename Ty, typename Tu>
     constexpr auto operator=(const Interval<Ty, Tu>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(otherInterval);
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
         return value = ((otherInterval.value+offsetAndScale.first)*offsetAndScale.second);
     }
 
