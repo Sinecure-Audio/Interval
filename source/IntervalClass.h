@@ -122,10 +122,11 @@ struct Interval
     }
 
     template<typename Ty, typename Tu>
-    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>& otherInterval)
+    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>&)
     {
-        constexpr auto offset = otherInterval.Start-Start;
-        constexpr auto scale = (End-Start)/(otherInterval.End-otherInterval.Start);
+        using OtherInterval = Interval<Ty, Tu>;
+        constexpr auto offset = OtherInterval::Start-Start;
+        constexpr auto scale = (End-Start)/(OtherInterval::End-OtherInterval::Start);
         return std::pair{offset, scale};
     }
 
