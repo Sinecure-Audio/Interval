@@ -27,6 +27,14 @@ TEST_CASE( "Same Interval Assignment", "[identities]" ) {
     REQUIRE( i1.value == v4 );
 }
 
+TEST_CASE( "Same Interval Different Type Assignment", "[identities]" ) {
+    constexpr auto v1 = 0, v2 = 10, v3 = 3, v4 = 8;
+    auto i1 = MAKE_INTERVAL(v1, v2, v3);
+    auto i2 = MAKE_INTERVAL(float(v1), float(v2), float(v4));
+    i1 = i2;
+    REQUIRE( floatCompareEqual(i1.value, v4) );
+}
+
 TEST_CASE( "Different Interval Assignment", "[identities]" ) {
     constexpr auto v1 = 0., v2 = 10., v3 = 3.;
     auto i1 = MAKE_INTERVAL(v1, v3, v3/2);
@@ -52,8 +60,7 @@ TEST_CASE( "Equality", "[identities]" ) {
     REQUIRE( (MAKE_INTERVAL(0,0.001) != MAKE_INTERVAL(0,1)) );
 
     REQUIRE( !(MAKE_INTERVAL(0,0) == MAKE_INTERVAL(0, .0001)) );
-    REQUIRE( !(MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0, .0001)) );
-
+    REQUIRE( !(MAKE_INTERVAL(0,1) == MAKE_INTERVAL(0, .0001)) ); 
     REQUIRE( !(MAKE_INTERVAL(0,0) != MAKE_INTERVAL(0,0)) );
     REQUIRE( !(MAKE_INTERVAL(0,1) != MAKE_INTERVAL(0,1)) );
 }
@@ -150,4 +157,39 @@ TEST_CASE( "Wrap", "[bounds]" ) {
     auto i1 = MAKE_INTERVAL(0,v2, v2, IntervalWrapModes::Wrap);
     i1 += v1;
     REQUIRE( i1.value == v1%v2);
+}
+
+
+//===================
+// Container Tests
+//===================
+
+
+TEST_CASE( "Different Range", "[Container]" ) {
+    ArrayWithIntervalRead<int, 4096> arr;
+    arr.fill(0);
+    constexpr auto v1 = .25;
+    constexpr auto v2 = 1;
+    constexpr auto i1 = MAKE_INTERVAL(0., 1., .25);
+    arr[arr.size()*v1] = v2;
+    REQUIRE( arr[i1] == v2);
+}
+
+TEST_CASE( "Clamped Read", "[Container]" ) {
+    ArrayWithIntervalRead<int, 4096> arr;
+    arr.fill(0);
+    constexpr auto i1 = MAKE_INTERVAL(0, 10000, 10000);
+    arr[4095] = 1;
+    REQUIRE( arr[i1] == 1);
+    //REQUIRE( arr[i1] == 4095);
+}
+
+
+TEST_CASE( "Wrapped Read", "[Container]" ) {
+    ArrayWithIntervalRead<int, 4096> arr;
+    arr.fill(0);
+    constexpr auto i1 = MAKE_INTERVAL(0, arr.size()-1, 4097, IntervalWrapModes::Wrap);
+    arr[2] = 1;
+    REQUIRE( arr[i1] == 1);
+    //REQUIRE( arr[i1] == 2);
 }

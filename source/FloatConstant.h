@@ -37,8 +37,11 @@ namespace {
     constexpr auto round(const T& value)
     {
         const auto absValue = abs(value);
-        const auto truncatedValue = static_cast<unsigned long long>(absValue);
-        return absValue-truncatedValue > .5L ? truncatedValue+1 : truncatedValue;
+        const auto truncatedValue = static_cast<long long>(absValue);
+        if (value >= 0)
+            return absValue-truncatedValue > .5L ? truncatedValue+1 : truncatedValue;
+        else
+            return absValue-truncatedValue > .5L ? static_cast<long long>(value)+1 : static_cast<long long>(value);
     }
 
     template<typename T>
@@ -59,7 +62,10 @@ namespace {
     constexpr bool floatCompareEqual(const T& a, const U& b)
     {
         if constexpr (!std::is_floating_point_v<T> || !std::is_floating_point_v<U>)// if neither parameter isn't a float, just use operator==
-            return a == b;
+        {
+            using CommonType = std::common_type_t<T, U>;
+            return CommonType(a) == CommonType(b);
+        }
         else 
             return abs(a-b) <= std::max(std::numeric_limits<T>::min(), std::numeric_limits<U>::min());
     }
@@ -119,7 +125,8 @@ namespace{
     {
         using InputType = std::decay_t<decltype(fl)>;
         const auto flag = fl >= 0;
-        const auto whole = flag ? static_cast<unsigned long long>(fl) : static_cast<unsigned long long>(fl*-1);
+        const long long llfl = static_cast<long long>(fl);
+        const auto whole = flag ? llfl : llfl*-1LL;
         const unsigned long long digits = integralPow<10ull, std::min(9, getSignificantDigitsForType<InputType>())>();
         const auto remainder = std::is_floating_point_v<InputType> ? round(static_cast<long double>(digits)*(static_cast<long double>(fl)-static_cast<long double>(whole))) : 0l;
 

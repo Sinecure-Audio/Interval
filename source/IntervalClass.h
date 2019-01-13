@@ -2,8 +2,8 @@
 
 #include "FloatConstant.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+// #pragma clang diagnostic push
+// #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 
 #define SICRCAT( A, B ) A ## B
 #define SICRSELECT( NAME, NUM ) SICRCAT( NAME ## _, NUM )
@@ -64,25 +64,40 @@ struct Interval
 
     static constexpr bool Reverse = Start>End;
 
-    constexpr Interval(const ValueType& val = Start) : value(val){}
-    constexpr Interval(const Interval&) = default;
-	constexpr Interval(Interval&&) = default;
+    constexpr Interval(const ValueType& val = Start) {setValue(val);}
 
-    constexpr auto operator=(const Interval<Bound1, Bound2>& otherInterval)
+    //constexpr Interval(const Interval&) = default;
+
+    template <typename Ty, typename Tu, IntervalWrapModes M>
+    constexpr Interval(const Interval<Ty, Tu, M>& otherInterval) {operator=(otherInterval);}
+
+	// constexpr Interval(Interval&&) = default;
+     
+    template<IntervalWrapModes M>
+    constexpr auto operator=(const Interval<Bound1, Bound2, M>& otherInterval)
     {
         return value = otherInterval.value;
     }
 
-    template<typename Ty, typename Tu>
-    constexpr auto operator=(const Interval<Ty, Tu>& otherInterval)
+    template<typename Ty, typename Tu, IntervalWrapModes M>//, std::enable_if_t<!std::is_same_v<Ty, Bound1> || !std::is_same_v<Tu, Bound2>>>
+    constexpr auto operator=(const Interval<Ty, Tu, M>& otherInterval)
     {
-        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
-        return value = ((otherInterval.value+offsetAndScale.first)*offsetAndScale.second);
+        // static_assert(!std::is_same_v<Ty, Bound1>, "no");
+        // static_assert(!std::is_same_v<Tu, Bound2>, "no");
+
+        constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu, M>{});   
+        if constexpr(std::is_integral_v<ValueType>)
+            setValue(round((otherInterval.value*offsetAndScale.second)+offsetAndScale.first));
+        else
+            setValue((otherInterval.value*offsetAndScale.second)+offsetAndScale.first);//((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
+        return *this;
     }
 
+    //template<std::enable_if_t<!is_specialization<ValueType, Interval>::value>
     constexpr auto operator=(const ValueType& newValue)
     {
-        return value = newValue;
+        value = newValue;
+        return *this;
     }
 
     //template<typename Ty, typename Tu>
@@ -110,26 +125,27 @@ struct Interval
 
     constexpr auto operator>(const Interval<Bound1, Bound2>& otherInterval) const
     {
-	if (value > otherInterval.value)
-        	return true;
-	else
-		return false;
+        if (value > otherInterval.value)
+            return true;
+        else
+            return false;
     }
 
     constexpr auto operator<(const Interval<Bound1, Bound2>& otherInterval) const
     {
-	if (value < otherInterval.value)
-        	return true;
-	else
-		return false;
+        if (value < otherInterval.value)
+            return true;
+        else
+            return false;
     }
 
-    template<typename Ty, typename Tu>
-    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu>&)
+    template<typename Ty, typename Tu, IntervalWrapModes M>
+    static constexpr auto getOffsetAndScale(const Interval<Ty, Tu, M>&)
     {
         using OtherInterval = Interval<Ty, Tu>;
-        constexpr auto offset = OtherInterval::Start-Start;
-        constexpr auto scale = (End-Start)/(OtherInterval::End-OtherInterval::Start);
+        using CommonType = std::common_type_t<typename OtherInterval::ValueType, ValueType>;
+        constexpr CommonType offset = OtherInterval::Start-Start;
+        constexpr auto scale = static_cast<double>(End-Start)/static_cast<double>(OtherInterval::End-OtherInterval::Start);
         return std::pair{offset, scale};
     }
 
@@ -137,7 +153,11 @@ struct Interval
     constexpr auto operator+=(const Interval<Ty, Tu>& otherInterval)
     {
         constexpr auto offsetAndScale = getOffsetAndScale(Interval<Ty, Tu>{});
-        setValue(value+((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
+        using OtherValueType = typename Interval<Ty, Tu>::ValueType;
+        if constexpr(std::is_floating_point_v<OtherValueType> && std::is_integral_v<ValueType>)
+            setValue(value+round(static_cast<OtherValueType>((otherInterval.value*offsetAndScale.second)+offsetAndScale.first)));
+        else
+            setValue(value+((otherInterval.value+offsetAndScale.first)*offsetAndScale.second));
         return *this;
     }
 
@@ -251,7 +271,7 @@ struct Interval
         }
 	}
 
-    ValueType value;
+    ValueType value{};
 };
 
-#pragma clang diagnostic pop
+// #pragma clang diagnostic pop
