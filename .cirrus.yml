@@ -1,11 +1,10 @@
 container:
   image : unriginal/clang-build:latest
 
-task:
-  get cmake:
+Build&Test_task:
+  script:
     - apt-get update --yes
     - apt-get install --yes cmake
-  Build&Test:
     - mkdir build
     - cd build
     - cmake ../
