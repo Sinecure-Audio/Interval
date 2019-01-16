@@ -1,0 +1,13 @@
+image : unriginal/clang-build:latest
+
+pipelines:
+  default:
+    - step:
+      script:
+        - apt-get update --yes
+        - apt-get install --yes cmake
+        - mkdir build
+        - cd build
+        - cmake ../
+        - make
+        - ./test_module --success
