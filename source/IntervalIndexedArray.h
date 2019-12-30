@@ -1,37 +1,30 @@
 #pragma once
 
-#include "IntervalClass.h"
+#include "StaticInterval.h"
 #include <array>
 
 template<typename T, size_t Size, IntervalWrapModes Mode = IntervalWrapModes::Clamp>
 class ArrayWithIntervalRead : public std::array<T, Size>
 {
-    // using ContainerInterval = decltype(MAKE_INTERVAL(0, Size));
 public:
-    constexpr ArrayWithIntervalRead() = default;
-    // template<typename... Args>
-    // constexpr ArrayWithIntervalRead(const Args&... args) : std::array<T, Size>{args...}{}
-    
-    constexpr ArrayWithIntervalRead(const ArrayWithIntervalRead&) = default;
-    constexpr ArrayWithIntervalRead(ArrayWithIntervalRead&&) = default;
+    using ContainerType = std::array<T, Size>;
+    using IntervalType = INTERVAL_TYPE(0, Size-1, Mode);
 
-    template<typename Start, typename End, IntervalWrapModes M>
-    constexpr auto& operator[](const Interval<Start, End, M>& inputInterval)
-    {
-        const decltype(MAKE_INTERVAL(0, Size-1, 0, Mode)) outputInterval = inputInterval;
-        return std::array<T, Size>::operator[](outputInterval.value);
-        //return outputInterval.value;
-    }
+    constexpr auto&       operator[](const IntervalType& inputInterval) noexcept       { return std::array<T, Size>::operator[](inputInterval.getValue()); }
+    constexpr const auto& operator[](const IntervalType& inputInterval) const noexcept { return std::array<T, Size>::operator[](inputInterval.getValue()); }
 
-    constexpr auto& operator[](const size_t& index)
-    {
-        return this->operator[](MAKE_INTERVAL(0, Size-1, index, Mode));
-    }
+    constexpr auto&       operator[](const typename ContainerType::size_type& index) noexcept       { return this->operator[](IntervalType{index}); }
+    constexpr const auto& operator[](const typename ContainerType::size_type& index) const noexcept { return this->operator[](IntervalType{index}); }
 
-// .at()
-    // constexpr auto& operator[]()
-    // {
+    constexpr auto&       at(const IntervalType& inputInterval) noexcept       { return std::array<T, Size>::operator[](inputInterval.getValue()); }
+    constexpr const auto& at(const IntervalType& inputInterval) const noexcept { return std::array<T, Size>::operator[](inputInterval.getValue()); }
 
-    // };
+    constexpr auto&       at(const typename ContainerType::size_type& index) noexcept       { return this->operator[](IntervalType{index}); }
+    constexpr const auto& at(const typename ContainerType::size_type& index) const noexcept { return this->operator[](IntervalType{index}); }
 };
 
+template<typename T, size_t Size>
+using BoundedArray = ArrayWithIntervalRead<T, Size, IntervalWrapModes::Clamp>;
+
+template<typename T, size_t Size>
+using PeriodicArray = ArrayWithIntervalRead<T, Size, IntervalWrapModes::Wrap>;

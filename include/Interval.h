@@ -1,5 +1,6 @@
 #pragma once
 
-#include "../source/IntervalClass.h"
+#include "../source/StaticInterval.h"
+#include "../source/DynamicInterval.h"
 #include "../source/IntervalIndexedArray.h"
-
+#include "../source/IntervalIndexedVector.h"

@@ -4,132 +4,162 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <limits>
+#include <algorithm>
 
 namespace {
-    template<typename T>
-    constexpr auto abs(const T& value)
-    {
-        return value >= T(0) ? value : value*T(-1);
-    }
+	namespace detail {
+		template<typename T>
+		constexpr T abs(const T& value) {
+			if constexpr(std::is_unsigned_v<T>)
+				return value;
+			else
+				return	value >= T{0} ? value : value * T{-1};
+			}
 
-    //A simple integral constexpr pow, used to get a value to convert the decimal part of the float to or from an integral type.
-    template <auto Base, auto Power>
-    constexpr auto integralPowImpl(const decltype(Base)& val)
-    {
-        if constexpr (Power > 0)
-            return integralPowImpl<Base, Power-1>(val*Base);
-        else
-            return val;
-    }
+		template<typename T, typename U>
+		constexpr auto fmod(const T& value, const U& modulus) {
+			if constexpr (std::is_integral_v<T> && std::is_integral_v<U>)
+				return value % modulus;
 
-    template <auto Base, auto Power>
-    constexpr auto integralPow()
-    {
-        if constexpr (Power == 0)
-            return 1;
-        else if (Power == 1)
-            return Base;
-        else if constexpr (Power > 1)
-            return integralPowImpl<Base, Power-1>(Base);
-    }
+			using ReturnType = std::conditional_t<std::is_floating_point_v<T> && std::is_floating_point_v<U>, T, std::conditional_t<std::is_floating_point_v<U>, U, T>>;
+			if (modulus == 0 || value == 0)
+				return ReturnType{ 0 };
 
-    template<typename T>
-    constexpr auto round(const T& value)
-    {
-        const auto absValue = abs(value);
-        const auto truncatedValue = static_cast<long long>(absValue);
-        if (value >= 0)
-            return absValue-truncatedValue > .5L ? truncatedValue+1 : truncatedValue;
-        else
-            return absValue-truncatedValue > .5L ? static_cast<long long>(value)+1 : static_cast<long long>(value);
-    }
+			const auto sign = value > 0 ? ReturnType{ 1} : ReturnType{ -1 };
+			const auto absVal = detail::abs(value);
+			const auto divVal = static_cast<unsigned long long>(detail::abs(value / modulus));
 
-    template<typename T>
-    constexpr auto getSignificantDigitsForType()
-    {
-        //Doesn't use numeric_limits because for some reason those function don't return the same as these macros, and these macros are correct in clang.
-        if constexpr(std::is_integral_v<T>)
-            return 0;
-        else if constexpr(std::is_same_v<T, float>)
-            return FLT_DIG;
-        else if constexpr(std::is_same_v<T, double>)
-            return DBL_DIG;
-        else if constexpr(std::is_same_v<T, long double>)
-            return LDBL_DIG;
-    }
+			if (absVal < detail::abs(modulus) || divVal == 0)
+				return ReturnType{ value };
 
-    template <typename T, typename U>
-    constexpr bool floatCompareEqual(const T& a, const U& b)
-    {
-        if constexpr (!std::is_floating_point_v<T> || !std::is_floating_point_v<U>)// if neither parameter isn't a float, just use operator==
-        {
-            using CommonType = std::common_type_t<T, U>;
-            return CommonType(a) == CommonType(b);
-        }
-        else 
-            return abs(a-b) <= std::max(std::numeric_limits<T>::min(), std::numeric_limits<U>::min());
-    }
-}// namespace
+			return ReturnType{ sign * (absVal / static_cast<ReturnType>(divVal) - modulus) };
+		}
 
-template<auto Sign, auto Integral, auto Digits, auto Remainder>
+
+
+		template<auto Base, auto Power, auto Value = Base>
+		class integralPowImpl : public std::conditional_t<(Power > 0), integralPowImpl<Base, Power - 1, Value*Base>, integralPowImpl<Base, 0, Value>> {};
+
+		template <auto Base, auto Value>
+		class integralPowImpl<Base, 0, Value> {
+		public:
+			static constexpr auto getValue() { return Value;}
+		};
+
+	 //   //A simple integral constexpr pow, used to get a value to convert the decimal part of the float to or from an integral type.
+	 //   template <auto Base, auto Power>
+	 //   constexpr auto integralPowImpl(const decltype(Base)& val)
+	 //   {
+		//	if constexpr (Power > 0)
+		//	{
+		//		if (Power <= 0)
+		//			return val;
+		//		//static_assert(Power > 0, "Uhoh");
+		//		return integralPowImpl<Base, Power-1>(val * Base);
+		//	}
+	 //       else
+	 //           return val;
+	 //   }
+
+		//template <auto Base>
+		//constexpr auto integralPowImpl<Base,0>(const decltype(Base)& val)
+		//{
+		//	return val;
+		//}
+		template <typename T, typename U, typename V>
+		constexpr unsigned long long iPowImpl(const T& base, const U& power, const V& value) {
+			if (power <= 0)
+				return value;
+			if (power == 1)
+				return value*base;
+			else
+				return iPowImpl(base, power-1, value*base);
+		}
+
+		template <typename T, typename U>
+		constexpr unsigned long long iPow(const T& base, const U& power) {
+			if (power == 0)
+				return T{1};
+			else if (power == 1)
+				return base;
+			else if (power > 1)
+			{
+				return iPowImpl(base, power-1, base);
+			}
+			else
+				return 0;
+		}
+
+		template<typename T>
+		constexpr auto round(const T& value) {
+			//const auto absValue = detail::abs(value);
+			//const long long truncatedValue = static_cast<long long>(detail::abs(value));
+			if (value >= 0) {
+				return (value - static_cast<long long>(value)) > .5L ? static_cast<long long>(value)+1 : static_cast<long long>(value);// 
+				//return absValue - truncatedValue > .5L ? truncatedValue + 1 : truncatedValue;
+			}
+			else {
+				return (detail::abs(value) - static_cast<long long>(detail::abs(value))) > .5L ? static_cast<long long>(value) - 1 : static_cast<long long>(value)	;//
+				//return absValue - truncatedValue > .5L ? static_cast<long long>(value) + 1 : static_cast<long long>(value);
+			}
+		}
+
+		template <class T>
+		constexpr size_t numDigits(T number) {
+		    size_t digits = number < 0 ? 1 : 0;// remove this ternary if '-' counts as a digit
+		    while (number) {
+		        number /= T{10};
+		        digits++;
+		    }
+		    return digits;
+		}
+	}// namespace
+}
+
+template<bool IsPositive, unsigned long long WholeNumber, size_t Scalar, unsigned long long Remainder, typename T>
 struct FloatConstant
 {
 private:
-    static constexpr auto makeFloat()
+	using Type = std::decay_t<T>;
+    static constexpr Type makeFloat() 
     {
-        if constexpr (NumberOfDigits != 0)
-        {
-            constexpr auto signFlag = IsPositive ? 1.L : -1.L;
-            const auto actualRemainder = Divisor == 0 ? 0 : (static_cast<long double>(Decimal)/Divisor);
+        if constexpr (Scalar == 0)	
+        	return IsPositive*WholeNumber;
+        else{
+            constexpr Type signFlag = IsPositive ? 1 : -1;
 
-            if constexpr (NumberOfDigits <= FLT_DIG)
-                return static_cast<float>(signFlag*(WholeNumber+actualRemainder));
-            else if constexpr (NumberOfDigits <= DBL_DIG)
-                return static_cast<double>(signFlag*(WholeNumber+actualRemainder));
-            else //if constexpr (NumberOfDigits <= LDBL_DIG)
-                return static_cast<long double>(signFlag*(WholeNumber+actualRemainder));
+            // constexpr Type Divisor = 1.0 / static_cast<Type>(detail::integralPow<10ull, NumberOfDigits+1>::getValue());
+			constexpr auto actualRemainder = T(Remainder)/T(Scalar);//static_cast<Type>(Remainder*Divisor);
+
+             return signFlag*(WholeNumber + actualRemainder);
         }
-        else
-            if constexpr (IsPositive)
-            { 
-                if constexpr(Integral <= UINT_MAX)
-                    return static_cast<unsigned int>(Integral);
-                else if constexpr(Integral <= ULONG_MAX)
-                    return static_cast<unsigned long>(Integral);
-                else //if constexpr(Integral <= ULLONG_MAX)
-                    return static_cast<unsigned long long>(Integral);
-            }
-            else
-            {
-                if constexpr(abs(Integral) <= INT_MAX)
-                    return static_cast<int>(Integral);
-                else if constexpr(abs(Integral) <= LONG_MAX)
-                    return static_cast<long>(Integral);
-                else if constexpr(abs(Integral) <= LLONG_MAX)
-                    return static_cast<long long>(Integral);
-            }
     }
 
 public:
-    static constexpr auto IsPositive = Sign;
-    static constexpr auto WholeNumber = Integral;
-    static constexpr auto NumberOfDigits = Digits;
-    static constexpr auto Divisor = integralPow<10ull, std::min(9, Digits)>();
-    static constexpr auto Decimal = Remainder;
-
-    static constexpr auto value = makeFloat();
+    static constexpr Type value = makeFloat();
 };
 
-namespace{
-    constexpr auto makeFloatConstantImpl = [](const auto& fl)
-    {
-        using InputType = std::decay_t<decltype(fl)>;
-        const auto flag = fl >= 0;
-        const long long llfl = static_cast<long long>(fl);
-        const auto whole = flag ? llfl : llfl*-1LL;
-        const unsigned long long digits = integralPow<10ull, std::min(9, getSignificantDigitsForType<InputType>())>();
-        const auto remainder = std::is_floating_point_v<InputType> ? round(static_cast<long double>(digits)*(static_cast<long double>(fl)-static_cast<long double>(whole))) : 0l;
+namespace {
+	template<typename InputType>
+	constexpr auto makeFloatConstantImpl(const InputType& fl)
+	{
+		if constexpr (std::is_integral_v<InputType>)
+			return std::make_tuple(fl >= 0, static_cast<unsigned long long>(fl), 0, 0, InputType{});
+		else {
+			const bool flag = fl >= 0;
+			const unsigned long long whole = static_cast<unsigned long long>(detail::abs(fl));
+			const size_t numWholeDigits = detail::numDigits(whole);
+			const size_t numberOfDecimalPlaces = std::numeric_limits<InputType>::digits10 - numWholeDigits;
+			const unsigned long long scalar = detail::iPow(10ull, numberOfDecimalPlaces);
+			const unsigned long long remainder = static_cast<unsigned long long>(detail::round(static_cast<long double>(scalar) * (static_cast<long double>(detail::abs(fl)) - static_cast<long double>(whole))));
 
-        return std::make_tuple(flag, whole, getSignificantDigitsForType<InputType>(), remainder);
-    };
+			return std::make_tuple(flag, whole, scalar, remainder, InputType{});
+		}
+	}
 }// namespace
+
+
+// the goal of the remainder value is to capture all useful digits after the decimal places
+// the number of useful digits is a function of the whole number i.e. the larger the whole number, the less useful the decimal places are
+// 

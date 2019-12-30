@@ -1,13 +1,12 @@
+project(IntervalTests)
 cmake_minimum_required(VERSION 3.8)
 
 cmake_policy(SET CMP0054 NEW)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CPP17_FLAG "-std=c++17")
-
-#project(interval)
 
 include(CTest)
 #include(cmake/Catch.cmake)
@@ -17,7 +16,7 @@ enable_testing()
 if(MSVC)
   add_definitions(/std:c++latest /W4 /w14545 /w34242 /w34254 /w34287 /w44263 /w44265 /w44296 /w44311 /w44826 /we4289 /w14546 /w14547 /w14549 /w14555 /w14619 /w14905 /w14906 /w14928)
 
-  add_definitions(/std:c++17)
+  # add_definitions(/std:c++17)
 
 
   if (MSVC_VERSION STREQUAL "1800")
@@ -46,34 +45,34 @@ else()
     add_definitions(-Wnoexcept)
   endif()
 
-  if(APPLE)
-    add_definitions(-Wno-sign-compare)
-  endif()
+  # if(APPLE)
+  #   add_definitions(-Wno-sign-compare)
+  # endif()
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   #option(USE_LIBCXX "Use clang's libcxx" TRUE)
+SET(CMAKE_LINKER lld)
+# SET(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
   if(USE_LIBCXX)
-    add_definitions(-stdlib=libc++)
-    set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG} -stdlib=libc++")
+    add_definitions(-stdlib=libc++)# -fuse-ld=lld)
+    set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG} -fuse-ld=lld -stdlib=libc++")
   else()
     set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG}")
   endif()
 elseif(CMAKE_COMPILER_IS_GNUCC)
   set(LINKER_FLAGS "${LINKER_FLAGS} ${CPP17_FLAG}")
 endif()
-
 # limitations in MinGW require us to make an optimized build
 # for the sake of object sizes or something
 if(MINGW OR CYGWIN)
   add_definitions(-O3)
 endif()
 
-include_directories(../tests)
-#set(Catch2 tests/catch.hpp)
-#target_link_libraries(test_module Catch2::Catch2)
+# set(Catch2 ../catch.hpp)
 
-add_executable(test_module tests/tests.cpp)
-#target_link_libraries(test_module Catch2)
-
+add_executable(IntervalTests ./tests.cpp)
+target_sources(IntervalTests PRIVATE ./StaticInterval.cpp)
+target_sources(IntervalTests PRIVATE ./DynamicInterval.cpp)
+target_sources(IntervalTests PRIVATE ./Containers.cpp)
