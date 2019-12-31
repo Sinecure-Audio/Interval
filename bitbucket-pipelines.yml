@@ -4,8 +4,8 @@ pipelines:
   default:
     - step:
       script:
-        - apt-get update --y
-        - apt-get install --y cmake
+        - apt-get update -y
+        - apt-get install -y cmake
 	- cd ./tests
         - mkdir build
         - cd build

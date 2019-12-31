@@ -80,7 +80,7 @@ public:
 
 
     template< class... Args >
-    typename ContainerType::iterator emplace(typename ContainerType::const_iterator&& pos, Args&&... args ) { ContainerType::emplace(std::forward<typename ContainerType::const_iterator>(pos), std::forward<Args...>(args...)); rescaleIndex(); }
+    typename ContainerType::iterator emplace(typename ContainerType::const_iterator&& pos, Args&&... args ) { auto iterator = ContainerType::emplace(std::forward<typename ContainerType::const_iterator>(pos), std::forward<Args...>(args...)); rescaleIndex(); return iterator;}
     
     void assign(const typename ContainerType::size_type&& count, T&& newElement) { ContainerType::assign(std::forward<decltype(count)>(count), std::forward<T>(newElement)); rescaleIndex(); }
 

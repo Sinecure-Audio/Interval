@@ -14,6 +14,8 @@ constexpr auto clampValue(const T& value, const T& lowerBound, const T& upperBou
             return upperBound;
         else if (value < lowerBound)
             return lowerBound;
+        else 
+            return value;
     }
 }
 

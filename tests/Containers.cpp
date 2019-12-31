@@ -1,3 +1,5 @@
+#include <numeric>
+
 #include "../include/Interval.h"
 
 #include "catch.hpp"
@@ -9,7 +11,7 @@
 
 TEST_CASE( "Static Container Different Range", "[Container]" ) {
     ArrayWithIntervalRead<int, 4096> arr;
-    ArrayWithIntervalRead<int, 4096> arr2{{0}};
+    ArrayWithIntervalRead<int, 4096> arr2{{0}};// check to see if direct init works
     std::iota(arr.begin(), arr.end(), 0);
     constexpr auto v1 = .25;
     constexpr auto v2 = 1;
@@ -21,6 +23,7 @@ TEST_CASE( "Static Container Different Range", "[Container]" ) {
         REQUIRE( arr.at(i1) == arr[static_cast<size_t>((arr.size()-1)*.25)]);
         // REQUIRE( arr[i1] == arr[static_cast<size_t>((arr.size()-1)*.25)]);
     // }    
+    (void)arr2;
 }
 
 TEST_CASE( "Static Container Clamped Read", "[Container]" ) {
@@ -126,18 +129,18 @@ TEST_CASE( "Pop Back", "[DynamicInterval][Vector Functionality]" ) {
     VectorWithIntervalRead<size_t, IntervalWrapModes::Clamp> vec;
     const auto i1 = DynamicInterval<double>(0, 1.0, 1.0, IntervalWrapModes::Clamp);
     vec.push_back(1);
+    vec.push_back(1);
     vec.pop_back();
     REQUIRE(vec[i1] == vec[i1]);
-    REQUIRE(vec.size() == 0);
+    REQUIRE(vec.size() == 1);
 }
 
 TEST_CASE( "Emplace", "[DynamicInterval][Vector Functionality]" ) {
-    // VectorWithIntervalRead<size_t, IntervalWrapModes::Clamp> vec;
-    // const auto i1 = DynamicInterval<double>(0, 1.0, 1.0, IntervalWrapModes::Clamp);
-    // vec.resize(2);
-    // vec.emplace(vec.cbegin()+1, 1);
-    // REQUIRE(vec[i1] == 1);
-    // REQUIRE(vec.size() == 1);
+    VectorWithIntervalRead<size_t, IntervalWrapModes::Clamp> vec;
+    const auto i1 = DynamicInterval<double>(0, 1.0, 1.0, IntervalWrapModes::Clamp);
+    vec.emplace(vec.cbegin(), 1);
+    REQUIRE(vec[i1] == 1);
+    REQUIRE(vec.size() == 1);
 }
 
 TEST_CASE( "Emplace Back", "[DynamicInterval][Vector Functionality]" ) {
@@ -200,8 +203,6 @@ TEST_CASE( "Clear", "[DynamicInterval][Vector Functionality]" ) {
     VectorWithIntervalRead<size_t, IntervalWrapModes::Wrap> vec;
     vec.resize(4096);
     std::iota(vec.begin(), vec.end(), 0);
-    const auto i1 = DynamicInterval<size_t>(0, vec.size()-1, 4097, IntervalWrapModes::Wrap);
     vec.clear();
-    REQUIRE(vec[i1] == vec[i1]);
     REQUIRE(vec.size() == 0);
 }

@@ -250,11 +250,11 @@ TEST_CASE( "Interval Equality", "[Static Interval][identities]" ) {
     REQUIRE( (MAKE_INTERVAL(0.0,0.001) == MAKE_INTERVAL(0.0,0.0)) );
     REQUIRE( (MAKE_INTERVAL(0.0,0.001) == MAKE_INTERVAL(0.0,1.0)) );
  
-    REQUIRE( (MAKE_INTERVAL(0,0) != MAKE_INTERVAL(1.0,2.0, 1.5)) );
-    REQUIRE( (MAKE_INTERVAL(0,1) != MAKE_INTERVAL(1.0,2.0, 1.5)) );
+    REQUIRE( (MAKE_INTERVAL(0.0,0.0) != MAKE_INTERVAL(1.0,2.0, 1.5)) );
+    REQUIRE( (MAKE_INTERVAL(0.0,1.0) != MAKE_INTERVAL(1.0,2.0, 1.5)) );
 
     constexpr auto a = MAKE_INTERVAL(0.0, 2.0, 1.0);
-    constexpr auto b = MAKE_INTERVAL(0., 1., .5);
+    constexpr auto b = MAKE_INTERVAL(0.0, 1.0, 0.5);
     REQUIRE_THAT( (a - b).getValue(), Catch::WithinRel(0.0));
     REQUIRE(!a.isIdenticalTo(b));
 }

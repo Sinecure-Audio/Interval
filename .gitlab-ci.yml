@@ -1,8 +1,8 @@
 image : unriginal/clang-build:latest
 
 before_script:
-    - apt-get update --y
-    - apt-get install --y cmake
+    - apt-get update -y
+    - apt-get install -y cmake
 
 Build&Test:
   script:
