@@ -8,7 +8,7 @@ class ArrayWithIntervalRead : public std::array<T, Size>
 {
 public:
     using ContainerType = std::array<T, Size>;
-    using IntervalType = INTERVAL_TYPE(0, Size-1, Mode);
+    using IntervalType = INTERVAL_TYPE(size_t(0), size_t(Size-1), Mode);
 
     constexpr auto&       operator[](const IntervalType& inputInterval) noexcept       { return std::array<T, Size>::operator[](inputInterval.getValue()); }
     constexpr const auto& operator[](const IntervalType& inputInterval) const noexcept { return std::array<T, Size>::operator[](inputInterval.getValue()); }

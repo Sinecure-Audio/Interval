@@ -143,14 +143,14 @@ struct DynamicInterval
         return *this;
     }
 
-    template<typename Start, typename End, IntervalWrapModes Mode>
-    constexpr bool hasSameBoundsAs(const Interval<Start, End, Mode>& /*otherInterval*/) const noexcept { return start == Start::value && end == End::value; }
+    template<typename Start, typename End, IntervalWrapModes Mode, typename Default>
+    constexpr bool hasSameBoundsAs(const Interval<Start, End, Mode, Default>& /*otherInterval*/) const noexcept { return start == Start::value && end == End::value; }
 
     template<typename T>
     constexpr bool hasSameBoundsAs(const DynamicInterval<T>& otherInterval) const noexcept { return start == otherInterval.getStart() && end == otherInterval.getEnd();}
 
-    template<typename Start, typename End, IntervalWrapModes Mode>
-    constexpr bool isIdenticalTo(const Interval<Start, End, Mode>& otherInterval) const noexcept { return hasSameBoundsAs(otherInterval) && wrapMode == Mode && otherInterval.getValue() == value; }
+    template<typename Start, typename End, IntervalWrapModes Mode, typename Default>
+    constexpr bool isIdenticalTo(const Interval<Start, End, Mode, Default>& otherInterval) const noexcept { return hasSameBoundsAs(otherInterval) && wrapMode == Mode && otherInterval.getValue() == value; }
 
     template<typename T>
     constexpr bool isIdenticalTo(const DynamicInterval<T>& otherInterval) const noexcept { return hasSameBoundsAs(otherInterval) && wrapMode == otherInterval.getWrapMode() && otherInterval.getValue() == value; }
@@ -168,17 +168,16 @@ struct DynamicInterval
     }
 
     constexpr void setValue(const ValueType& newValue) noexcept {
-        if (!empty) {
-            if (newValue <= upperBound && newValue >= lowerBound)
-                value = newValue;
-            else 
-                if (wrapMode == IntervalWrapModes::Clamp)
-                    value = clampValue(newValue, lowerBound, upperBound);
-                else if (wrapMode == IntervalWrapModes::Wrap)
-                    value = wrapValue(newValue, lowerBound, upperBound);
-        }
-		else
-            (void)newValue;// removes a warning about unused variable
+        if (empty)
+            return;
+
+        if (newValue <= upperBound && newValue >= lowerBound)
+            value = newValue;
+        else 
+            if (wrapMode == IntervalWrapModes::Clamp)
+                value = clampValue(newValue, lowerBound, upperBound);
+            else if (wrapMode == IntervalWrapModes::Wrap)
+                value = wrapValue(newValue, lowerBound, upperBound);
 	}
 
     constexpr void setStart(const ValueType& newStart) noexcept {

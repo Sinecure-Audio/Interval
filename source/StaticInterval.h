@@ -4,39 +4,10 @@
 
 #include "IntervalUtilities.h"
 
-#define GLUE(x, y) x y
-
-#define RETURN_ARG_COUNT(_1_, _2_, _3_, _4_, _5_, count, ...) count
-#define EXPAND_ARGS(args) RETURN_ARG_COUNT args
-#define COUNT_ARGS_MAX5(...) EXPAND_ARGS((__VA_ARGS__, 5, 4, 3, 2, 1, 0))
-
-#define OVERLOAD_MACRO2(name, count) name##_##count
-#define OVERLOAD_MACRO1(name, count) OVERLOAD_MACRO2(name, count)
-#define OVERLOAD_MACRO(name, count) OVERLOAD_MACRO1(name, count)
-
-#define CALL_OVERLOAD(name, ...) GLUE(OVERLOAD_MACRO(name, COUNT_ARGS_MAX5(__VA_ARGS__)), (__VA_ARGS__))
-
-#define MAKE_INTERVAL_2(start, end) \
-Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start)), decltype(std::get<4>(makeFloatConstantImpl(start)))>, \
-  	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end)), decltype(std::get<4>(makeFloatConstantImpl(end)))>>{}
-
-#define MAKE_INTERVAL_3(start, end, default) \
-Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start)), decltype(std::get<4>(makeFloatConstantImpl(start)))>, \
-  	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end)), decltype(std::get<4>(makeFloatConstantImpl(end)))>>(default)
-
-#define MAKE_INTERVAL_4(start, end, default, mode) \
-Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start)), decltype(std::get<4>(makeFloatConstantImpl(start)))>, \
-  	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end)), decltype(std::get<4>(makeFloatConstantImpl(end)))>, mode>(default)
-
-#define MAKE_INTERVAL( ... ) CALL_OVERLOAD( MAKE_INTERVAL, __VA_ARGS__ )
-
-#define INTERVAL_TYPE(start, end, mode)  Interval<FloatConstant<std::get<0>(makeFloatConstantImpl(start)), std::get<1>(makeFloatConstantImpl(start)), std::get<2>(makeFloatConstantImpl(start)), std::get<3>(makeFloatConstantImpl(start)), decltype(std::get<4>(makeFloatConstantImpl(start)))>, \
-  	 FloatConstant<std::get<0>(makeFloatConstantImpl(end)), std::get<1>(makeFloatConstantImpl(end)), std::get<2>(makeFloatConstantImpl(end)), std::get<3>(makeFloatConstantImpl(end)), decltype(std::get<4>(makeFloatConstantImpl(end)))>, mode>
-
 template<typename ValueType>
 struct DynamicInterval;
 
-template<typename Bound1, typename Bound2, IntervalWrapModes WrapMode = IntervalWrapModes::Clamp>
+template<typename Bound1, typename Bound2, IntervalWrapModes WrapMode = IntervalWrapModes::Clamp, typename Default = Bound1>
 struct Interval
 {
     //static_assert(is_specialization<Bound1, FloatConstant>{}, "Start value needs to be a float constant.");
@@ -44,8 +15,9 @@ struct Interval
 
     using ValueType = std::common_type_t<decltype(Bound1::value), decltype(Bound2::value)>;
 
-    static constexpr ValueType Start = Bound1::value;
-    static constexpr ValueType End   = Bound2::value;
+    static constexpr ValueType Start          =  Bound1::value;
+    static constexpr ValueType End            =  Bound2::value;
+    static constexpr ValueType DefaultValue   = Default::value;
 
     static constexpr IntervalWrapModes Mode = WrapMode; 
 
@@ -61,20 +33,20 @@ struct Interval
     constexpr Interval() = default;
     constexpr Interval(const ValueType& val) {setValue(val);}
 
-    template <typename Ty, typename Tu, IntervalWrapModes M>
-    constexpr Interval(const Interval<Ty, Tu, M>& otherInterval) {setValue(rescaleValue(otherInterval));}
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr Interval(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {setValue(rescaleValue(otherInterval));}
 
-    template<IntervalWrapModes M>
-    constexpr auto operator=(const Interval<Bound1, Bound2, M>& otherInterval) {
+    template<IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator=(const Interval<Bound1, Bound2, OtherMode, OtherDefault>& otherInterval) {
         if constexpr(!Empty)
             value = otherInterval.getValue();
         return *this;
     }
 
-    template<typename T, typename U, IntervalWrapModes M>
-    constexpr auto operator=(const Interval<T, U, M>& otherInterval) {
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator=(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {
         if constexpr(!Empty) {
-            using OtherInterval = Interval<T, U, M>;
+            using OtherInterval = Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>;
             constexpr auto offset = OtherInterval::Start-Start; 
             const auto scaledValue = (otherInterval.getValue()*(End-Start))/(OtherInterval::End-OtherInterval::Start);
             setValue(static_cast<ValueType>(scaledValue+offset));
@@ -88,9 +60,9 @@ struct Interval
         return *this;
     }
 
-    template<typename Ty, typename Tu, IntervalWrapModes M>
-    constexpr auto operator+=(const Interval<Ty, Tu, M>& otherInterval) {
-        if constexpr(!Empty && !Interval<Ty, Tu, M>::Empty)
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator+=(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {
+        if constexpr(!Empty && !Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>::Empty)
             setValue(value+static_cast<ValueType>(rescaleValue(otherInterval)));
         return *this;
     }
@@ -110,9 +82,9 @@ struct Interval
     }
 
 
-    template<typename Ty, typename Tu>
-    constexpr auto operator-=(const Interval<Ty, Tu>& otherInterval) {
-        if constexpr(!Empty && !Interval<Ty, Tu>::Empty)
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator-=(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {
+        if constexpr(!Empty && !Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>::Empty)
             setValue(value-static_cast<ValueType>(rescaleValue(otherInterval)));
         return *this;
     }
@@ -132,9 +104,9 @@ struct Interval
     }
 
 
-    template<typename Ty, typename Tu>
-    constexpr auto operator*=(const Interval<Ty, Tu>& otherInterval) {
-        if constexpr(!Empty && !Interval<Ty, Tu>::Empty)
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator*=(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {
+        if constexpr(!Empty && !Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>::Empty)
             setValue(value*static_cast<ValueType>(rescaleValue(otherInterval)));
         return *this;
     }
@@ -154,9 +126,9 @@ struct Interval
     }
 
 
-    template<typename Ty, typename Tu>
-    constexpr auto operator/=(const Interval<Ty, Tu>& otherInterval) {
-        if constexpr(!Empty && !Interval<Ty, Tu>::Empty)
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr auto operator/=(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) {
+        if constexpr(!Empty && !Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>::Empty)
             setValue(value/static_cast<ValueType>(rescaleValue(otherInterval)));
         return *this;
     }
@@ -175,9 +147,9 @@ struct Interval
         return *this;
     }
 
-    template<typename Start1, typename End1, IntervalWrapModes Mode1>
-    constexpr bool hasSameBoundsAs(const Interval<Start1, End1, Mode1>& /*otherInterval*/) const noexcept {
-        return Start == Start1::value && End == End1::value;
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr bool hasSameBoundsAs(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& /*otherInterval*/) const noexcept {
+        return Start == OtherStart::value && End == OtherEnd::value;
     }
 
     template<typename T>
@@ -185,9 +157,9 @@ struct Interval
         return Start == otherInterval.getStart() && End == otherInterval.getEnd();
     }
 
-    template<typename Start1, typename End1, IntervalWrapModes Mode1>
-    constexpr bool isIdenticalTo(const Interval<Start1, End1, Mode1>& otherInterval) const noexcept {
-        return hasSameBoundsAs(otherInterval) && Mode == Mode1 && otherInterval.getValue() == value;
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr bool isIdenticalTo(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) const noexcept {
+        return hasSameBoundsAs(otherInterval) && Mode == OtherMode && otherInterval.getValue() == value;
     }
 
     template<typename T>
@@ -197,7 +169,7 @@ struct Interval
 
     constexpr const auto& getValue() const noexcept { return value; }
 
-    constexpr auto getNormalizedValue() const noexcept {
+    constexpr auto getNormalizedValue() const noexcept {// TODO: make this behave as expected with integral types-- ditch the float in the conditional
         using ReturnType = std::conditional_t<std::is_floating_point_v<ValueType>, ValueType, float>;
         if constexpr(Empty)
             return ReturnType{0};
@@ -206,7 +178,7 @@ struct Interval
     }
 
 private:
-    ValueType value{Start};
+    ValueType value{DefaultValue};
 
     constexpr void setValue(const ValueType& newValue) noexcept {
         if constexpr(!Empty) {
@@ -234,12 +206,12 @@ private:
             return Start;
     }
 
-    template<typename T, typename U, IntervalWrapModes M>
-    constexpr ValueType rescaleValue(const Interval<T, U, M>& otherInterval) const noexcept {
-        if constexpr(!Interval<T, U, M>::Empty) {
-            using OtherInterval = Interval<T, U, M>;
+    template<typename OtherStart, typename OtherEnd, IntervalWrapModes OtherMode, typename OtherDefault>
+    constexpr ValueType rescaleValue(const Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>& otherInterval) const noexcept {
+        using OtherInterval = Interval<OtherStart, OtherEnd, OtherMode, OtherDefault>;
+        if constexpr(!OtherInterval::Empty) {
             constexpr auto offset = OtherInterval::Start-Start; 
-            const auto scaledValue = (otherInterval.getValue()*(End-Start))/(OtherInterval::End-OtherInterval::Start);
+            const auto scaledValue = (otherInterval.getValue()*(End-Start))/static_cast<ValueType>(OtherInterval::End-OtherInterval::Start);
             return static_cast<ValueType>(scaledValue+offset);
         }
         else
@@ -247,165 +219,172 @@ private:
     }
 };  
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator==(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator==(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return lhs.getNormalizedValue() == rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator!=(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator!=(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return !(lhs == rhs);
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator>(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator>(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return lhs.getNormalizedValue() > rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator<(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator<(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return lhs.getNormalizedValue() < rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator>=(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator>=(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return (lhs.getNormalizedValue() >= rhs.getNormalizedValue());
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator<=(const Interval<Start, End, Mode>& lhs, const Interval<Start1, End1, Mode1>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator<=(const Interval<Start, End, Mode, Default>& lhs, const Interval<Start1, End1, Mode1, Default1>& rhs) noexcept {
     return (lhs.getNormalizedValue() <= rhs.getNormalizedValue());
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator==(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator==(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return lhs.getNormalizedValue() == rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator!=(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator!=(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return !(lhs == rhs);
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator>(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator>(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return lhs.getNormalizedValue() > rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator<(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator<(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return lhs.getNormalizedValue() < rhs.getNormalizedValue();
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator>=(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator>=(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return (lhs.getNormalizedValue() >= rhs.getNormalizedValue());
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator<=(const Interval<Start, End, Mode>& lhs, const DynamicInterval<T>& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator<=(const Interval<Start, End, Mode, Default>& lhs, const DynamicInterval<T>& rhs) noexcept {
     return (lhs.getNormalizedValue() <= rhs.getNormalizedValue());
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode>
-constexpr auto operator==(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default>
+constexpr auto operator==(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return lhs.getValue() == rhs;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator!=(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator!=(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return !(lhs == rhs);
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator>(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator>(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return lhs.getValue() > rhs;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator<(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator<(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return lhs.getValue() < rhs;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator>=(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator>=(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return (lhs.getValue() >= rhs);
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename T>
-constexpr auto operator<=(const Interval<Start, End, Mode>& lhs, const typename Interval<Start, End, Mode>::ValueType& rhs) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename T>
+constexpr auto operator<=(const Interval<Start, End, Mode, Default>& lhs, const typename Interval<Start, End, Mode, Default>::ValueType& rhs) noexcept {
     return (lhs.getValue() <= rhs);
 }
 
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename RhsType>
-constexpr auto operator+(const Interval<Start, End, Mode>& lhsInterval, const RhsType& rhsValue) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename RhsType>
+constexpr auto operator+(const Interval<Start, End, Mode, Default>& lhsInterval, const RhsType& rhsValue) noexcept {
     const auto interval = MAKE_INTERVAL(lhsInterval.Start, lhsInterval.End, lhsInterval.getValue());
     if constexpr(!interval.Empty)
         interval -= rhsValue;
     return interval;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator+(const Interval<Start, End, Mode>& lhsInterval, const Interval<Start1, End1, Mode1>& rhsInterval) noexcept {
-    if constexpr(Interval<Start, End, Mode>::Empty || Interval<Start1, End1, Mode1>::Empty)
-        return Interval<Start, End, Mode>{lhsInterval.getValue()};
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator+(const Interval<Start, End, Mode, Default>& lhsInterval, const Interval<Start1, End1, Mode1, Default1>& rhsInterval) noexcept {
+    using ReturnType = Interval<Start, End, Mode, Default>;
+    if constexpr(ReturnType::Empty || Interval<Start1, End1, Mode1, Default1>::Empty)
+        return ReturnType{lhsInterval.getValue()};
     else {
-        using ValueType = typename Interval<Start, End, Mode>::ValueType;
-        return Interval<Start, End, Mode>{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()+rhsInterval.getNormalizedValue())};
+        using ValueType = typename ReturnType::ValueType;
+        return ReturnType{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()+rhsInterval.getNormalizedValue())};
     }
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename RhsType>
-constexpr auto operator-(const Interval<Start, End, Mode>& lhsInterval, const RhsType& rhsValue) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename RhsType>
+constexpr auto operator-(const Interval<Start, End, Mode, Default>& lhsInterval, const RhsType& rhsValue) noexcept {
     const auto interval = MAKE_INTERVAL(lhsInterval.Start, lhsInterval.End, lhsInterval.getValue());
     if constexpr(!interval.Empty)
         interval -= rhsValue;
     return interval;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator-(const Interval<Start, End, Mode>& lhsInterval, const Interval<Start1, End1, Mode1>& rhsInterval) noexcept {
-    if constexpr(Interval<Start, End, Mode>::Empty || Interval<Start1, End1, Mode1>::Empty)
-        return Interval<Start, End, Mode>{lhsInterval.getValue()};
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator-(const Interval<Start, End, Mode, Default>& lhsInterval, const Interval<Start1, End1, Mode1, Default1>& rhsInterval) noexcept {
+    using ReturnType = Interval<Start, End, Mode, Default>;
+    if constexpr(ReturnType::Empty || Interval<Start1, End1, Mode1, Default1>::Empty)
+        return ReturnType{lhsInterval.getValue()};
     else {
-        using ValueType = typename Interval<Start, End, Mode>::ValueType;
-        return Interval<Start, End, Mode>{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()-rhsInterval.getNormalizedValue())};
+        using ValueType = typename ReturnType::ValueType;
+        return ReturnType{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()-rhsInterval.getNormalizedValue())};
     }
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename RhsType>
-constexpr auto operator*(const Interval<Start, End, Mode>& lhsInterval, const RhsType& rhsValue) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename RhsType>
+constexpr auto operator*(const Interval<Start, End, Mode, Default>& lhsInterval, const RhsType& rhsValue) noexcept {
     const auto interval = MAKE_INTERVAL(lhsInterval.Start, lhsInterval.End, lhsInterval.getValue());
     if constexpr(!interval.Empty)
         interval *= rhsValue;
     return interval;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator*(const Interval<Start, End, Mode>& lhsInterval, const Interval<Start1, End1, Mode1>& rhsInterval) noexcept {
-    if constexpr(Interval<Start, End, Mode>::Empty || Interval<Start1, End1, Mode1>::Empty)
-        return Interval<Start, End, Mode>{lhsInterval.getValue()};
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator*(const Interval<Start, End, Mode, Default>& lhsInterval, const Interval<Start1, End1, Mode1, Default1>& rhsInterval) noexcept {
+    using ReturnType = Interval<Start, End, Mode, Default>;
+    if constexpr(ReturnType::Empty || Interval<Start1, End1, Mode1, Default1>::Empty)
+        return ReturnType{lhsInterval.getValue()};
     else {
-        using ValueType = typename Interval<Start, End, Mode>::ValueType;        
-        return Interval<Start, End, Mode>{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()*rhsInterval.getNormalizedValue())};
+        using ValueType = typename ReturnType::ValueType;
+        return ReturnType{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()*rhsInterval.getNormalizedValue())};
     }
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename RhsType>
-constexpr auto operator/(const Interval<Start, End, Mode>& lhsInterval, const RhsType& rhsValue) noexcept {
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename RhsType>
+constexpr auto operator/(const Interval<Start, End, Mode, Default>& lhsInterval, const RhsType& rhsValue) noexcept {
     const auto interval = MAKE_INTERVAL(lhsInterval.Start, lhsInterval.End, lhsInterval.getValue());
     if constexpr(!interval.Empty)
         interval /= rhsValue;
     return interval;
 }
 
-template<typename Start, typename End, IntervalWrapModes Mode, typename Start1, typename End1, IntervalWrapModes Mode1>
-constexpr auto operator/(const Interval<Start, End, Mode>& lhsInterval, const Interval<Start1, End1, Mode1>& rhsInterval) noexcept {
-    if constexpr(Interval<Start, End, Mode>::Empty || Interval<Start1, End1, Mode1>::Empty)
-        return Interval<Start, End, Mode>{lhsInterval.getValue()};
+template<typename Start, typename End, IntervalWrapModes Mode, typename Default, typename Start1, typename End1, IntervalWrapModes Mode1, typename Default1>
+constexpr auto operator/(const Interval<Start, End, Mode, Default>& lhsInterval, const Interval<Start1, End1, Mode1, Default1>& rhsInterval) noexcept {
+    using ReturnType = Interval<Start, End, Mode, Default>;
+    if constexpr(ReturnType::Empty || Interval<Start1, End1, Mode1, Default1>::Empty)
+        return ReturnType{lhsInterval.getValue()};
     else {
-        using ValueType = typename Interval<Start, End, Mode>::ValueType;
-        return Interval<Start, End, Mode>{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()/rhsInterval.getNormalizedValue())};
+        using ValueType = typename ReturnType::ValueType;
+        return ReturnType{MAKE_INTERVAL(ValueType{0}, ValueType{1}, lhsInterval.getNormalizedValue()/rhsInterval.getNormalizedValue())};
     }
 }
+
+template<typename... Args>
+using StaticInterval = Interval<Args...>;

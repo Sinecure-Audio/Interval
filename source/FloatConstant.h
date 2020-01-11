@@ -96,11 +96,11 @@ namespace {
 			//const auto absValue = detail::abs(value);
 			//const long long truncatedValue = static_cast<long long>(detail::abs(value));
 			if (value >= 0) {
-				return (value - static_cast<long long>(value)) > .5L ? static_cast<long long>(value)+1 : static_cast<long long>(value);// 
+				return (static_cast<T>(value - static_cast<long long>(value)) > T(.5)) ? static_cast<T>(static_cast<long long>(value)+1) : static_cast<T>(static_cast<long long>(value));// 
 				//return absValue - truncatedValue > .5L ? truncatedValue + 1 : truncatedValue;
 			}
 			else {
-				return (detail::abs(value) - static_cast<long long>(detail::abs(value))) > .5L ? static_cast<long long>(value) - 1 : static_cast<long long>(value)	;//
+				return (static_cast<T>(detail::abs(value) - static_cast<long long>(detail::abs(value))) > T(.5)) ? static_cast<T>(static_cast<long long>(value) - 1) : static_cast<T>(static_cast<long long>(value));//
 				//return absValue - truncatedValue > .5L ? static_cast<long long>(value) + 1 : static_cast<long long>(value);
 			}
 		}

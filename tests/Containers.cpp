@@ -29,7 +29,7 @@ TEST_CASE( "Static Container Different Range", "[Container]" ) {
 TEST_CASE( "Static Container Clamped Read", "[Container]" ) {
     ArrayWithIntervalRead<int, 4096> arr;
     std::iota(arr.begin(), arr.end(), 0);
-    constexpr auto i1 = MAKE_INTERVAL(0, 10000, 10000);
+    constexpr auto i1 = MAKE_INTERVAL(size_t(0), size_t(10000), size_t(10000));
     arr[arr.size()-1] = 1;
     REQUIRE(decltype(arr)::IntervalType{i1}.getValue() == arr.size()-1);
     REQUIRE(arr[i1] == 1);
