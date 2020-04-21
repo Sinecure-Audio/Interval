@@ -10,7 +10,7 @@ public:
     using ContainerType = std::vector<T, Allocator>;
     using IntervalType = DynamicInterval<typename ContainerType::size_type>;
 
-    constexpr VectorWithIntervalRead() = default;
+    VectorWithIntervalRead() = default;
 
     explicit VectorWithIntervalRead( const Allocator& alloc ) noexcept : ContainerType(alloc) {}
     explicit VectorWithIntervalRead( typename ContainerType::size_type count, const T& value, const Allocator& alloc = Allocator()) : ContainerType(count, value, alloc) {rescaleIndex();}
