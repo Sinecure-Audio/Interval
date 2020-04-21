@@ -1,7 +1,8 @@
 #pragma once
 
-#include "FloatConstant.h"
+#include <type_traits>
 
+#include "FloatConstant.h"
 #include "IntervalUtilities.h"
 
 template<typename ValueType>
@@ -10,9 +11,6 @@ struct DynamicInterval;
 template<typename Bound1, typename Bound2, IntervalWrapModes WrapMode = IntervalWrapModes::Clamp, typename Default = Bound1>
 struct Interval
 {
-    //static_assert(is_specialization<Bound1, FloatConstant>{}, "Start value needs to be a float constant.");
-    //static_assert(is_specialization<Bound2, FloatConstant>{}, "End value needs to be a float constant.");
-
     using ValueType = std::common_type_t<decltype(Bound1::value), decltype(Bound2::value)>;
 
     static constexpr ValueType Start          =  Bound1::value;
