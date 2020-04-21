@@ -1,7 +1,7 @@
 
 #include "../include/Interval.h"
 
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 //===================
 // Math Tests

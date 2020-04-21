@@ -1,4 +1,4 @@
-This is a small utility library that implements two simple classes that represent an interval, as well as two containers that use these intervals as lookups. The purpose of these intervals is to hold a value, constrain it within an inclusive interval (a set of two numbers), and to provide arithmetic operations between themselves, other intervals, and arithmetic types. Currently, this library requires c++17 or higher to compile. 
+This is a small utility library that implements two simple classes that represent an interval, as well as two containers that use these intervals as lookups. The purpose of these intervals is to hold a value, constrain it within an inclusive interval (a set of two numbers), and to provide arithmetic operations between themselves, other intervals, and arithmetic types. Currently, this library requires c++17 or higher to compile. Additionally, building and running the tests requires Catch2 to be installed.
 
 There are two kinds of intervals in this library: static intervals, whose bounds and bounding behavior are a part of their type, and dynamic intervals, whose bounds and bounding behavior can be changed at runtime.
 

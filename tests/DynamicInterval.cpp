@@ -1,6 +1,6 @@
 #include "../include/Interval.h"
 
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 //===================
 // Dynamic Interval Tests
