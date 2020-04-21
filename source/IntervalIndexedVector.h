@@ -12,17 +12,18 @@ public:
 
     VectorWithIntervalRead() = default;
 
-    explicit VectorWithIntervalRead( const Allocator& alloc ) noexcept : ContainerType(alloc) {}
-    explicit VectorWithIntervalRead( typename ContainerType::size_type count, const T& value, const Allocator& alloc = Allocator()) : ContainerType(count, value, alloc) {rescaleIndex();}
-    explicit VectorWithIntervalRead( typename ContainerType::size_type count, const Allocator& alloc = Allocator() ) : ContainerType(count, alloc) {rescaleIndex();}
-    template< class InputIt >
-    VectorWithIntervalRead( InputIt first, InputIt last, const Allocator& alloc = Allocator() ) : ContainerType(first, last, alloc) {rescaleIndex();}
+    explicit VectorWithIntervalRead(const Allocator& alloc) noexcept : ContainerType(alloc) {}
+    explicit VectorWithIntervalRead(typename ContainerType::size_type count, const T& value, const Allocator& alloc = Allocator()) : ContainerType(count, value, alloc) {rescaleIndex();}
+    explicit VectorWithIntervalRead(typename ContainerType::size_type count, const Allocator& alloc = Allocator()) : ContainerType(count, alloc) {rescaleIndex();}
+    
+    template<class InputIt>
+    VectorWithIntervalRead(InputIt first, InputIt last, const Allocator& alloc = Allocator()) : ContainerType(first, last, alloc) {rescaleIndex();}
 
     VectorWithIntervalRead(const ContainerType& other) : ContainerType(other, std::allocator_traits<Allocator>::select_on_container_copy_construction(other.get_allocator())) {rescaleIndex();}
-    VectorWithIntervalRead( const ContainerType& other, const Allocator& alloc) : ContainerType(other, alloc) {rescaleIndex();}
-    VectorWithIntervalRead( ContainerType&& other ) noexcept : ContainerType(other) {rescaleIndex();}
-    VectorWithIntervalRead( ContainerType&& other, const Allocator& alloc ) : ContainerType(other, alloc) {rescaleIndex();}
-    VectorWithIntervalRead( std::initializer_list<T> init, const Allocator& alloc = Allocator() ) : ContainerType(init, alloc) {rescaleIndex();}
+    VectorWithIntervalRead(const ContainerType& other, const Allocator& alloc) : ContainerType(other, alloc) {rescaleIndex();}
+    VectorWithIntervalRead(ContainerType&& other) noexcept : ContainerType(other) {rescaleIndex();}
+    VectorWithIntervalRead(ContainerType&& other, const Allocator& alloc) : ContainerType(other, alloc) {rescaleIndex();}
+    VectorWithIntervalRead(std::initializer_list<T> init, const Allocator& alloc = Allocator()) : ContainerType(init, alloc) {rescaleIndex();}
 
     template<typename U>
     constexpr T& operator[](const DynamicInterval<U>& index) noexcept {
